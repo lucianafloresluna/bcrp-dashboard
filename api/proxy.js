@@ -1,23 +1,16 @@
-export const config = { runtime: 'edge' };
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const path = searchParams.get('path');
+  const path = req.query.path;
+  if (!path) return res.status(400).json({ error: 'Falta path' });
 
-  if (!path) return new Response('Falta path', { status: 400 });
+  const url = 'https://estadisticas.bcrp.gob.pe/estadisticas/series/api/' + path;
 
-  const resp = await fetch(
-    'https://estadisticas.bcrp.gob.pe/estadisticas/series/api/' + path,
-    { headers: { 'User-Agent': 'Mozilla/5.0' } }
-  );
-
-  const body = await resp.text();
-
-  return new Response(body, {
-    headers: {
-      'content-type': 'application/json',
-      'access-control-allow-origin': '*',
-      'cache-control': 's-maxage=900',
-    },
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0' }
   });
-}
+
+  const data = await response.text();
+  res.setHeader('Cache-Control', 's-maxage=900');
+  res.status(200).send(data);
+};
